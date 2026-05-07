@@ -1,0 +1,5 @@
+. Core Idea
+
+Component	Purpose
+ReplicaSet	Keeps a fixed number of Pods running
+HPA	Automatically changes number of Pods based on load
