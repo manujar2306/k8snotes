@@ -1,0 +1,316 @@
+Kubernetes Deployment, ReplicaSet, Scaling, Rolling Update, and Rollback — Complete Notes
+
+1. What is Kubernetes?
+Kubernetes is a container orchestration platform used to:
+
+deploy applications
+scale applications
+manage containers
+recover failed containers automatically
+
+2. Core Components
+Deployment    
+↓
+ReplicaSet    
+↓
+Pods    
+↓
+Containers
+
+3. Responsibilities
+Component         Responsibility 
+Deployment        Manages application updates and ReplicaSets
+ReplicaSet        Maintains desired number of Pods 
+Pod               Smallest deployable unit 
+Container         Actual running application
+
+4. Complete Deployment YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:  
+ name: ecommerce-app
+ spec:  
+  replicas: 3 
+  
+  selector:    
+    matchLabels:      
+      app: ecommerce 
+      
+    template:    
+      metadata:      
+        labels:        
+          app: ecommerce    
+        spec:      
+        containers:      
+          - name: ecommerce-container        
+            image: ecommerce-app:v1        
+          ports:        
+            - containerPort: 80
+
+5. YAML Explanation
+
+apiVersion
+----------
+apiVersion: apps/v1
+Defines Kubernetes API version.
+
+kind
+------
+kind: Deployment
+Creates a Deployment object.
+Deployment manages:
+ReplicaSets
+scaling
+updates
+rollback
+
+metadata
+--------
+metadata:  name: ecommerce-app
+Name of Deployment.
+
+spec
+----
+spec:
+Desired state definition.
+
+replicas
+--------
+replicas: 3
+Means:
+Run 3 copies of application
+If one Pod crashes:
+
+ReplicaSet creates new Pod automatically
+
+selector
+---------
+selector:  
+matchLabels:    
+app: ecommerce
+
+Deployment identifies Pods using labels.
+
+template
+---------
+template:
+Defines Pod configuration.
+
+labels
+--------
+labels:  
+app: ecommerce
+
+Labels attached to Pods.
+Must match selector.
+
+containers
+-----------
+containers:
+Defines containers inside Pod.
+
+image
+-----
+image: ecommerce-app:v1
+Application version to run.
+
+6. What Happens Internally
+When you run:
+kubectl apply -f deployment.yaml
+Kubernetes performs:
+Step 1:Deployment createdStep 
+Step 2:Deployment creates ReplicaSet
+Step 3:ReplicaSet creates 3 Pods
+Step 4:Pods run containers
+
+Architecture:
+Deployment    
+↓
+ReplicaSet 3
+
+↓ Pods
+
+7. ReplicaSet Role
+
+ReplicaSet continuously checks:
+Desired Pods = 3Current Pods = ?
+
+Pod Failure Example
+
+Suppose one Pod crashes.
+Current state:
+Current Pods = 2 Desired Pods = 3
+
+ReplicaSet automatically creates new Pod.
+Self-healing achieved.
+
+8. Scaling
+
+Increase replicas:
+kubectl scale deployment ecommerce-app --replicas=5
+Now Kubernetes creates:
+5 Pods
+
+Architecture:
+Deployment    
+↓
+ReplicaSet    
+↓
+5 Pods
+
+9. Rolling Update
+
+Suppose developers release:
+ecommerce-app:v2
+
+Update YAML:
+image: ecommerce-app:v2
+
+Apply update:
+kubectl apply -f deployment.yaml
+
+10. Rolling Update Process
+
+Kubernetes does NOT stop all Pods immediately.
+
+Instead:
+Old Pods replaced gradually
+
+Initial State
+Pod-1 v1
+Pod-2 v1
+Pod-3 v1
+
+Update Starts
+Kubernetes creates new Pod:
+
+Pod-1 v1
+Pod-2 v1
+Pod-3 v1
+Pod-4 v2
+
+After new Pod becomes healthy:
+
+Pod-1 v1 removed
+Process continues gradually.
+
+Final state:
+Pod-A v2
+Pod-B v2
+Pod-C v2
+
+11. Internal ReplicaSets During Update
+
+Before update:
+ReplicaSet-v1 active
+
+After update:
+ReplicaSet-v2 created
+
+Architecture:
+Deployment    
+↓
+ReplicaSet-v2    
+↓
+Pods running v2
+
+ReplicaSet-v1 still stored
+
+12. Production Failure Example
+
+Suppose v2 contains payment bug.
+Users report:
+Payments failing
+Production issue occurs.
+
+13. Rollback
+Rollback command:
+kubectl rollout undo deployment/ecommerce-app
+
+14. What Rollback Does
+
+Kubernetes performs:
+Scale down ReplicaSet-v2 Scale up ReplicaSet-v1
+
+Architecture changes back:
+Deployment    
+↓
+ReplicaSet-v1    
+↓
+Pods running v1
+
+Application restored.
+
+15. Rollback to Specific Revision
+Check history:
+kubectl rollout history deployment/ecommerce-app
+
+Example:
+REVISION    IMAGE1           v12           v2
+
+Rollback to revision 1:
+kubectl rollout undo deployment/ecommerce-app --to-revision=1
+
+16. Why Deployment is Powerful
+Deployment provides:
+scaling
+self-healing
+rolling updates
+rollback
+version history
+
+17. Important Commands
+
+Apply Deployment
+kubectl apply -f deployment.yaml
+
+View Deployments
+kubectl get deployments
+
+View ReplicaSets
+kubectl get rs
+
+View Pods
+kubectl get pods
+
+Scale Application
+kubectl scale deployment ecommerce-app --replicas=5
+
+Check Rollout Status
+kubectl rollout status deployment/ecommerce-app
+
+Rollout History
+kubectl rollout history deployment/ecommerce-app
+
+Rollback pervious Version
+kubectl rollout undo deployment/ecommerce-app
+
+Rollback Specific Revision
+kubectl rollout undo deployment/ecommerce-app --to-revision=1
+
+18. Complete Lifecycle
+Developer writes Deployment YAML            ↓kubectl apply            ↓Deployment created            ↓Deployment creates ReplicaSet            ↓ReplicaSet creates Pods            ↓Pods run containers            ↓Users access application            ↓Scaling possible            ↓Updates possible            ↓Rollback possible
+
+19. Final Understanding
+Think of Kubernetes like this:
+Deployment = Project ManagerReplicaSet = SupervisorPods = WorkersContainers = Actual Applications
+
+Deployment decides desired state
+
+ReplicaSet maintains Pod count
+
+Pods host containers
+
+Containers run applications
+
+Rollback works because:
+
+old ReplicaSets are preserved
+
+Deployment can switch back anytime
+
+
+This provides:
+high availability
+zero/minimal downtime
+safe production deployments
