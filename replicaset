@@ -1,0 +1,182 @@
+3. ReplicaSet
+
+A ReplicaSet ensures:
+
+Desired number of Pods are always running
+
+Example:
+
+apiVersion: apps/v1
+kind: ReplicaSet
+
+metadata:
+  name: my-rs
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+What ReplicaSet Does
+
+If one Pod crashes:
+
+Current Pods = 2
+Desired Pods = 3
+
+ReplicaSet creates new Pod automatically.
+
+It provides:
+
+self-healing
+scaling
+ReplicaSet Limitation
+
+ReplicaSet does NOT support:
+
+rolling updates
+rollback
+deployment history
+
+You must manage updates manually.
+
+4. Deployment
+
+Deployment is a higher-level object.
+
+Example:
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: my-deployment
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+What Deployment Does
+
+Deployment automatically:
+
+creates ReplicaSet
+manages ReplicaSet
+performs rolling updates
+supports rollback
+stores deployment history
+Internal Working
+
+When Deployment is created:
+
+Deployment
+    ↓ creates
+ReplicaSet
+    ↓ creates
+Pods
+
+You usually do NOT create ReplicaSets manually in production.
+
+5. Updating Application
+
+Suppose image changes:
+
+image: nginx:v2
+ReplicaSet Case
+
+With ReplicaSet:
+
+no automatic rollout
+no rollback
+must manually delete/create Pods
+
+Difficult to manage.
+
+Deployment Case
+
+Deployment performs:
+
+Rolling Update
+
+Old Pods replaced gradually.
+
+No downtime.
+
+6. Rollback Support
+
+ReplicaSet:
+
+No rollback support
+
+Deployment:
+
+kubectl rollout undo deployment/my-deployment
+
+Supports rollback because old ReplicaSets are stored.
+
+7. Real Production Usage
+Object	Production Usage
+ReplicaSet	Rarely used directly
+Deployment	Commonly used
+
+Reason:
+
+Deployment provides:
+
+safer deployments
+easier scaling
+rollback capability
+rolling updates
+8. Example Flow
+ReplicaSet Flow
+ReplicaSet
+    ↓
+3 Pods
+
+Only maintains Pod count.
+
+Deployment Flow
+Deployment
+    ↓
+ReplicaSet
+    ↓
+3 Pods
+
+Deployment adds:
+
+rollout strategy
+rollback
+version management
+9. Feature Comparison Table
+Feature	ReplicaSet	Deployment
+Maintains Pod count	Yes	Yes
+Self-healing	Yes	Yes
+Scaling	Yes	Yes
+Rolling updates	No	Yes
+Rollback	No	Yes
+Revision history	No	Yes
+Manages ReplicaSets	No	Yes
+Production recommended	No	Yes
